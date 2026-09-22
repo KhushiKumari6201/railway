@@ -14,6 +14,7 @@ interface AppStateContextType {
   approveBlock: (blockId: string) => void
   rejectBlock: (blockId: string) => void
   resolveConflict: (conflictId: string) => void
+  resolveAllConflicts: () => void
   addTaskToPlan: (taskId: string) => void
   scheduleTaskDate: (taskId: string, date: string) => void
   refreshData: () => Promise<void>
@@ -87,10 +88,25 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }
 
   const rejectBlock = (blockId: string) => {
+    const targetBlock = recommendedBlocks.find((b) => b.id === blockId)
+    const affectedTaskIds = targetBlock?.taskIds || []
+    const scheduledDate = targetBlock?.date
+
     // Optimistic local update
     setRecommendedBlocks((prev) =>
       prev.map((block) => (block.id === blockId ? { ...block, status: 'Rejected' } : block))
     )
+
+    // STEP 7 FIX: Revert bundled tasks scheduled for this block back to Open
+    if (affectedTaskIds.length > 0) {
+      setTasks((prev) =>
+        prev.map((t) =>
+          affectedTaskIds.includes(t.id) && t.status === 'Scheduled' && (!scheduledDate || t.scheduledDate === scheduledDate)
+            ? { ...t, status: 'Open', scheduledDate: undefined }
+            : t
+        )
+      )
+    }
 
     // Persist to MongoDB backend
     api.rejectBlock(blockId).catch((err) => {
@@ -107,6 +123,16 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     // Persist to MongoDB backend
     api.resolveConflict(conflictId).catch((err) => {
       console.error('[API] Failed to resolve conflict in backend:', err)
+    })
+  }
+
+  const resolveAllConflicts = () => {
+    // Optimistic local update
+    setConflicts((prev) => prev.map((c) => ({ ...c, resolved: true })))
+
+    // Persist to MongoDB backend via single atomic bulk endpoint
+    api.resolveAllConflicts().catch((err) => {
+      console.error('[API] Failed to resolve all conflicts in backend:', err)
     })
   }
 
@@ -168,6 +194,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     approveBlock,
     rejectBlock,
     resolveConflict,
+    resolveAllConflicts,
     addTaskToPlan,
     scheduleTaskDate,
     refreshData,

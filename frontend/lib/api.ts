@@ -3,11 +3,19 @@ import type { MaintenanceTask, RecommendedBlock, Conflict } from './types'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
 export const api = {
+  // --- Health Check ---
+  async getHealth(): Promise<{ status: string; database: string }> {
+    const res = await fetch(`${API_BASE}/health`, { cache: 'no-store' })
+    if (!res.ok) throw new Error(`Health check failed: ${res.statusText}`)
+    return res.json()
+  },
+
   // --- Tasks ---
   async getTasks(): Promise<MaintenanceTask[]> {
     const res = await fetch(`${API_BASE}/tasks`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`Failed to fetch tasks: ${res.statusText}`)
-    return res.json()
+    const json = await res.json()
+    return Array.isArray(json) ? json : json.tasks || []
   },
 
   async updateTask(id: string, data: Partial<MaintenanceTask>): Promise<MaintenanceTask> {
@@ -17,14 +25,16 @@ export const api = {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error(`Failed to update task ${id}: ${res.statusText}`)
-    return res.json()
+    const json = await res.json()
+    return json.task || json
   },
 
   // --- Recommended Blocks ---
   async getBlocks(): Promise<RecommendedBlock[]> {
     const res = await fetch(`${API_BASE}/blocks`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`Failed to fetch blocks: ${res.statusText}`)
-    return res.json()
+    const json = await res.json()
+    return Array.isArray(json) ? json : json.blocks || []
   },
 
   async approveBlock(id: string): Promise<{ success: boolean; block: RecommendedBlock }> {
@@ -47,7 +57,8 @@ export const api = {
   async getConflicts(): Promise<Conflict[]> {
     const res = await fetch(`${API_BASE}/conflicts`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`Failed to fetch conflicts: ${res.statusText}`)
-    return res.json()
+    const json = await res.json()
+    return Array.isArray(json) ? json : json.conflicts || []
   },
 
   async resolveConflict(id: string): Promise<{ success: boolean; conflict: Conflict }> {
@@ -66,3 +77,4 @@ export const api = {
     return res.json()
   },
 }
+

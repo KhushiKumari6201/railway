@@ -28,7 +28,7 @@ import type { Conflict } from '@/lib/types'
 import { corridorName } from '@/lib/data/corridors'
 
 export default function ConflictsPage() {
-  const { conflicts, resolveConflict } = useAppState()
+  const { conflicts, resolveConflict, resolveAllConflicts } = useAppState()
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null)
 
   const handleResolve = (item: Conflict) => {
@@ -52,7 +52,7 @@ export default function ConflictsPage() {
       >
         <Button
           onClick={() => {
-            conflicts.filter((c) => !c.resolved).forEach((c) => resolveConflict(c.id))
+            resolveAllConflicts()
             toast.success('All Conflicts Resolved', {
               description: 'Applied recommended window adjustments across all corridors.',
             })

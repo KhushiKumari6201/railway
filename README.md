@@ -350,3 +350,9 @@ Open **`http://localhost:3000`** in your browser:
 - Public Landing Page: `http://localhost:3000/`
 - Officer Login: `http://localhost:3000/auth`
 - Operations Dashboard: `http://localhost:3000/dashboard`
+
+
+
+Yhan antigravity ka response rahega upar
+
+this is the response of antigravity after phase 1 now give me phase 2 prompt after checking that antigravity response give me prompt 
