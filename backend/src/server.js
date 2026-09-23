@@ -7,6 +7,18 @@ const { seedDatabase } = require('./seed')
 const tasksRouter = require('./routes/tasks')
 const blocksRouter = require('./routes/blocks')
 const conflictsRouter = require('./routes/conflicts')
+const networkRouter = require('./routes/network')
+const whatIfRouter = require('./routes/whatIf')
+const disruptionsRouter = require('./routes/disruptions')
+const reschedulingRouter = require('./routes/rescheduling')
+const authRouter = require('./routes/auth')
+const usersRouter = require('./routes/users')
+const auditRouter = require('./routes/audit')
+const analyticsRouter = require('./routes/analytics')
+const optimizationRouter = require('./routes/optimization')
+const commandCenterRouter = require('./routes/commandCenter')
+const alertsRouter = require('./routes/alerts')
+const { seedUsers } = require('./services/authService')
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -116,9 +128,20 @@ app.post('/api/seed', async (req, res) => {
 })
 
 // API Routes with DB readiness guard
+app.use('/api/auth', authRouter)
+app.use('/api/users', requireDatabase, usersRouter)
+app.use('/api/audit', requireDatabase, auditRouter)
+app.use('/api/analytics', requireDatabase, analyticsRouter)
 app.use('/api/tasks', requireDatabase, tasksRouter)
 app.use('/api/blocks', requireDatabase, blocksRouter)
 app.use('/api/conflicts', requireDatabase, conflictsRouter)
+app.use('/api/network', requireDatabase, networkRouter)
+app.use('/api/what-if', requireDatabase, whatIfRouter)
+app.use('/api/disruptions', requireDatabase, disruptionsRouter)
+app.use('/api/rescheduling', requireDatabase, reschedulingRouter)
+app.use('/api/optimization', requireDatabase, optimizationRouter)
+app.use('/api/command-center', commandCenterRouter)
+app.use('/api/alerts', requireDatabase, alertsRouter)
 
 // 404 Handler for unknown API endpoints
 app.use('/api/*', (req, res) => {
@@ -145,6 +168,8 @@ async function startServer() {
     await connectDB()
     // Auto-seed if database is empty (non-destructive)
     await seedDatabase(false)
+    // Seed canonical prototype users and roles
+    await seedUsers()
   } catch (err) {
     console.warn(
       `[Warning] Initial MongoDB connection failed. Server will start, but API endpoints requiring MongoDB will return 503 until MongoDB is accessible.`

@@ -14,6 +14,9 @@ export interface UserSession {
   division: string
   initials: string
   loginTime: string
+  role?: string
+  token?: string
+  permissions?: string[]
 }
 
 export const defaultOfficers: UserSession[] = [
@@ -27,6 +30,7 @@ export const defaultOfficers: UserSession[] = [
     division: 'Kharagpur Division, SER',
     initials: 'SM',
     loginTime: '',
+    role: 'CONTROLLER',
   },
   {
     id: 'den',
@@ -38,6 +42,7 @@ export const defaultOfficers: UserSession[] = [
     division: 'Kharagpur Division, SER',
     initials: 'RV',
     loginTime: '',
+    role: 'PLANNER',
   },
   {
     id: 'dee',
@@ -49,6 +54,7 @@ export const defaultOfficers: UserSession[] = [
     division: 'Kharagpur Division, SER',
     initials: 'AS',
     loginTime: '',
+    role: 'PLANNER',
   },
   {
     id: 'dste',
@@ -60,6 +66,7 @@ export const defaultOfficers: UserSession[] = [
     division: 'Kharagpur Division, SER',
     initials: 'PN',
     loginTime: '',
+    role: 'MAINTENANCE_OFFICER',
   },
 ]
 
@@ -67,13 +74,14 @@ interface AuthContextType {
   user: UserSession | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (userData: Partial<UserSession>, redirectTo?: string) => void
+  login: (userData: Partial<UserSession>, redirectTo?: string) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const STORAGE_KEY = 'railonic_user_session_v1'
+const TOKEN_KEY = 'railsanket_auth_token'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null)
@@ -87,15 +95,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         const parsed = JSON.parse(stored) as UserSession
         setUser(parsed)
+      } else {
+        const defaultSession: UserSession = {
+          ...defaultOfficers[0],
+          loginTime: new Date().toLocaleTimeString('en-IN', { hour12: false }),
+        }
+        setUser(defaultSession)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSession))
       }
     } catch (e) {
       console.error('Failed to load user session from localStorage', e)
+      setUser(defaultOfficers[0])
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  const login = (userData: Partial<UserSession>, redirectTo = '/dashboard') => {
+  const login = async (userData: Partial<UserSession>, redirectTo = '/command-center') => {
+    let authToken = userData.token || ''
+    let userPermissions = userData.permissions || []
+
+    // Try backend authentication if online
+    if (userData.email) {
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userData.email,
+            password: 'ser•planner•2026',
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.token) {
+            authToken = data.token
+            userPermissions = data.permissions || []
+          }
+        }
+      } catch (err) {
+        // Fallback gracefully to offline session
+      }
+    }
+
     const sessionUser: UserSession = {
       id: userData.id || 'usr-custom',
       name: userData.name || 'Officer On-Duty',
@@ -104,6 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       department: userData.department || 'Operating Control',
       email: userData.email || 'officer.kgp@ser.railnet.gov.in',
       division: userData.division || 'Kharagpur Division, SER',
+      role: userData.role || 'CONTROLLER',
+      token: authToken,
+      permissions: userPermissions,
       initials:
         userData.initials ||
         (userData.name
@@ -119,7 +164,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser))
-      // Also set a document cookie so server/middleware can read it if needed
+      if (authToken) {
+        localStorage.setItem(TOKEN_KEY, authToken)
+      }
+      // Also set document cookie so server/middleware can read it if needed
       document.cookie = `railonic_auth=1; path=/; max-age=86400; SameSite=Lax`
     } catch (e) {
       console.error('Failed to save user session', e)
@@ -133,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     try {
       localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(TOKEN_KEY)
       document.cookie = `railonic_auth=; path=/; max-age=0`
     } catch (e) {
       console.error('Failed to clear user session', e)

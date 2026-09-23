@@ -353,6 +353,3 @@ Open **`http://localhost:3000`** in your browser:
 
 
 
-Yhan antigravity ka response rahega upar
-
-this is the response of antigravity after phase 1 now give me phase 2 prompt after checking that antigravity response give me prompt 

@@ -11,8 +11,13 @@ interface AppStateContextType {
   tasks: MaintenanceTask[]
   recommendedBlocks: RecommendedBlock[]
   conflicts: Conflict[]
-  approveBlock: (blockId: string) => void
+  approveBlock: (blockId: string) => Promise<{ success: boolean; block: RecommendedBlock }>
   rejectBlock: (blockId: string) => void
+  saveBlock: (block: RecommendedBlock) => void
+  checkConflicts: (
+    block: Partial<RecommendedBlock>,
+    persist?: boolean
+  ) => Promise<{ hasConflict: boolean; hasBlockingConflict: boolean; conflicts: Conflict[] }>
   resolveConflict: (conflictId: string) => void
   resolveAllConflicts: () => void
   addTaskToPlan: (taskId: string) => void
@@ -59,32 +64,57 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     refreshData()
   }, [refreshData])
 
-  const approveBlock = (blockId: string) => {
-    const targetBlock = recommendedBlocks.find((b) => b.id === blockId)
-    const affectedTaskIds = targetBlock?.taskIds || []
-    const scheduledDate = targetBlock?.date
+  const approveBlock = async (blockId: string) => {
+    try {
+      const res = await api.approveBlock(blockId)
+      const approvedBlock = res.block || recommendedBlocks.find((b) => b.id === blockId)
+      const affectedTaskIds = approvedBlock?.taskIds || []
+      const scheduledDate = approvedBlock?.date
 
-    // Optimistic local update
-    setRecommendedBlocks((prev) =>
-      prev.map((block) =>
-        block.id === blockId ? { ...block, status: 'Approved' } : block
-      )
-    )
-
-    if (affectedTaskIds.length > 0) {
-      setTasks((prev) =>
-        prev.map((t) =>
-          affectedTaskIds.includes(t.id)
-            ? { ...t, status: 'Scheduled', scheduledDate: scheduledDate ?? t.scheduledDate }
-            : t
+      setRecommendedBlocks((prev) =>
+        prev.map((block) =>
+          block.id === blockId ? { ...block, status: 'Approved' } : block
         )
       )
-    }
 
-    // Persist to MongoDB backend
-    api.approveBlock(blockId).catch((err) => {
-      console.error('[API] Failed to approve block in backend:', err)
-    })
+      if (affectedTaskIds.length > 0) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            affectedTaskIds.includes(t.id)
+              ? { ...t, status: 'Scheduled', scheduledDate: scheduledDate ?? t.scheduledDate }
+              : t
+          )
+        )
+      }
+
+      refreshData().catch(() => {})
+      return res
+    } catch (err) {
+      console.error('[API] Failed to approve block:', err)
+      throw err
+    }
+  }
+
+  const checkConflicts = async (
+    block: Partial<RecommendedBlock>,
+    persist = false
+  ) => {
+    try {
+      const res = await api.checkConflicts(block, persist)
+      if (persist && res.conflicts && res.conflicts.length > 0) {
+        setConflicts((prev) => {
+          const map = new Map(prev.map((c) => [c.id, c]))
+          for (const c of res.conflicts) {
+            map.set(c.id, c)
+          }
+          return Array.from(map.values())
+        })
+      }
+      return res
+    } catch (err) {
+      console.warn('[API] Conflict check failed:', err)
+      return { hasConflict: false, hasBlockingConflict: false, conflicts: [] }
+    }
   }
 
   const rejectBlock = (blockId: string) => {
@@ -187,12 +217,32 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     [recommendedBlocks]
   )
 
+  const saveBlock = (newBlock: RecommendedBlock) => {
+    // Optimistic local update
+    setRecommendedBlocks((prev) => {
+      const idx = prev.findIndex((b) => b.id === newBlock.id)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = newBlock
+        return next
+      }
+      return [newBlock, ...prev]
+    })
+
+    // Persist to MongoDB backend
+    api.saveBlock(newBlock).catch((err) => {
+      console.error('[API] Failed to save block in backend:', err)
+    })
+  }
+
   const value = {
     tasks,
     recommendedBlocks,
     conflicts,
     approveBlock,
     rejectBlock,
+    saveBlock,
+    checkConflicts,
     resolveConflict,
     resolveAllConflicts,
     addTaskToPlan,

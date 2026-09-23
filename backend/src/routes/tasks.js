@@ -1,6 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const Task = require('../models/Task')
+const { requireAuth } = require('../middleware/authMiddleware')
+const { requirePermission } = require('../middleware/permissionMiddleware')
+const { PERMISSIONS } = require('../config/permissions')
+const { logAuditEvent } = require('../services/auditService')
 
 const VALID_DEPARTMENTS = ['Engineering', 'S&T', 'Traction']
 const VALID_CRITICALITIES = ['Low', 'Medium', 'High', 'Critical']
@@ -72,7 +76,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /api/tasks
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requirePermission(PERMISSIONS.TASKS_CREATE), async (req, res) => {
   try {
     const {
       id,
@@ -181,6 +185,17 @@ router.post('/', async (req, res) => {
     })
 
     await task.save()
+
+    await logAuditEvent({
+      req,
+      action: 'TASK_CREATED',
+      entityType: 'Task',
+      entityId: task.id,
+      newState: task.toObject(),
+      reason: `Task created in corridor ${task.corridorId}`,
+      metadata: { department: task.department, assetId: task.assetId },
+    })
+
     res.status(201).json(task)
   } catch (error) {
     console.error('Error creating task:', error)
@@ -189,11 +204,16 @@ router.post('/', async (req, res) => {
 })
 
 // PATCH /api/tasks/:id
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireAuth, requirePermission(PERMISSIONS.TASKS_UPDATE), async (req, res) => {
   try {
     const rawUpdates = req.body
     if (!rawUpdates || typeof rawUpdates !== 'object') {
       return res.status(400).json({ success: false, error: 'ValidationError', message: 'Update payload must be a JSON object' })
+    }
+
+    const previousTask = await Task.findOne({ id: req.params.id }).lean()
+    if (!previousTask) {
+      return res.status(404).json({ success: false, error: 'NotFound', message: `Task '${req.params.id}' not found` })
     }
 
     // Build sanitized updates exclusively from the whitelist
@@ -254,9 +274,16 @@ router.patch('/:id', async (req, res) => {
       { new: true, runValidators: true }
     )
 
-    if (!updated) {
-      return res.status(404).json({ success: false, error: 'NotFound', message: `Task '${req.params.id}' not found` })
-    }
+    await logAuditEvent({
+      req,
+      action: 'TASK_UPDATED',
+      entityType: 'Task',
+      entityId: req.params.id,
+      previousState: previousTask,
+      newState: updated.toObject(),
+      reason: req.body.reason || 'Operational task parameters updated',
+      metadata: { modifiedFields: Object.keys(sanitizedUpdates) },
+    })
 
     res.json(updated)
   } catch (error) {

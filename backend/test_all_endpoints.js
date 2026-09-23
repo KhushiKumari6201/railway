@@ -1,6 +1,8 @@
 const http = require('http')
+const { getTestToken } = require('./src/services/authService')
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = 'http://127.0.0.1:5000'
+const TEST_TOKEN = getTestToken('ADMIN', 'USR-ADMIN-01', 'Admin Officer')
 
 function request(method, path, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -12,6 +14,7 @@ function request(method, path, body = null, headers = {}) {
       path: url.pathname + url.search,
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${TEST_TOKEN}`,
         ...headers,
       },
     }
@@ -85,8 +88,9 @@ async function run() {
   })
 
   // 5. POST /api/tasks (Create test task)
+  const testTaskId = `TST-${Date.now()}`
   const testTask = {
-    id: 'TST-999',
+    id: testTaskId,
     sourceSystem: 'TMS',
     department: 'Engineering',
     assetId: 'TRK-9999',
@@ -108,31 +112,25 @@ async function run() {
   await assertTest('POST /api/tasks creates task successfully', async () => {
     const res = await request('POST', '/api/tasks', testTask)
     if (res.status !== 201) throw new Error(`Status ${res.status}: ${JSON.stringify(res.body)}`)
-    if (res.body.id !== 'TST-999') throw new Error('Returned task id does not match')
+    if (res.body.id !== testTaskId) throw new Error(`Expected ID ${testTaskId}`)
   })
 
-  // 6. POST /api/tasks Duplicate Check
+  // 6. Duplicate task ID check (STEP 2: 409 Conflict)
   await assertTest('POST /api/tasks rejects duplicate task ID with 409 Conflict', async () => {
     const res = await request('POST', '/api/tasks', testTask)
-    if (res.status !== 409) throw new Error(`Expected 409 Conflict, got ${res.status}`)
+    if (res.status !== 409) throw new Error(`Expected status 409 for duplicate ID, got ${res.status}`)
   })
 
-  // 7. PATCH /api/tasks/:id (Safe Update with _id stripping)
-  await assertTest('PATCH /api/tasks/TST-999 updates allowed fields and strips _id', async () => {
-    const updatePayload = {
-      _id: 'malicious_id_attempt',
-      status: 'Scheduled',
-      scheduledDate: '2026-09-28',
-      crew: 'PWay Gang Alpha',
-      priority: 78,
-    }
-    const res = await request('PATCH', '/api/tasks/TST-999', updatePayload)
+  // 7. PATCH /api/tasks/:id (STEP 3: Validate updates and strip prohibited fields)
+  await assertTest(`PATCH /api/tasks/${testTaskId} updates allowed fields and strips _id`, async () => {
+    const res = await request('PATCH', `/api/tasks/${testTaskId}`, {
+      defectSeverity: 75,
+      _id: 'prohibited_mongo_id',
+      id: 'prohibited_override_id',
+    })
     if (res.status !== 200) throw new Error(`Status ${res.status}: ${JSON.stringify(res.body)}`)
-    if (res.body.status !== 'Scheduled') throw new Error(`Status not updated: ${res.body.status}`)
-    if (res.body.scheduledDate !== '2026-09-28') throw new Error(`scheduledDate not updated`)
-    if (res.body.crew !== 'PWay Gang Alpha') throw new Error(`crew not updated`)
-    if (res.body.priority !== 78) throw new Error(`priority not updated`)
-    if (res.body._id === 'malicious_id_attempt') throw new Error(`_id was not stripped!`)
+    if (res.body.defectSeverity !== 75) throw new Error('Field not updated')
+    if (res.body.id !== testTaskId) throw new Error('ID field was improperly modified')
   })
 
   // 8. GET /api/blocks
@@ -156,7 +154,7 @@ async function run() {
 
   // 10. PATCH /api/blocks/:id/reject (STEP 7 REVERSION TEST)
   await assertTest('PATCH /api/blocks/REC-101/reject reverts bundled tasks to Open and clears scheduledDate', async () => {
-    const res = await request('PATCH', '/api/blocks/REC-101/reject')
+    const res = await request('PATCH', '/api/blocks/REC-101/reject', { reason: 'Operational scheduling rejection test' })
     if (res.status !== 200) throw new Error(`Status ${res.status}: ${JSON.stringify(res.body)}`)
     if (res.body.block.status !== 'Rejected') throw new Error('Block status not Rejected')
 

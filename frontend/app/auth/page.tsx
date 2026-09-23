@@ -38,7 +38,7 @@ function AuthCard() {
   // Direct redirection if user is already signed in (no clicking required)
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace('/dashboard')
+      router.replace('/command-center')
     }
   }, [isLoading, isAuthenticated, router])
 
@@ -111,7 +111,7 @@ function AuthCard() {
         loginTime: new Date().toLocaleTimeString('en-IN', { hour12: false }),
       }
 
-      login(officerToLogin, '/dashboard')
+      login(officerToLogin, '/command-center')
     }, 300)
   }
 
