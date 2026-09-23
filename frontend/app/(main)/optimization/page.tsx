@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -50,7 +50,7 @@ const TIME_HORIZONS = [
   { label: 'Night Window (22:00 - 06:00)', value: 'night', start: '22:00', end: '06:00' },
 ]
 
-export default function OptimizationDashboardPage() {
+function OptimizationDashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -826,5 +826,22 @@ export default function OptimizationDashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OptimizationDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-96 items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <Cpu className="h-8 w-8 animate-spin text-amber-600" />
+            <span className="text-xs text-muted-foreground">Loading Optimization Module...</span>
+          </div>
+        </div>
+      }
+    >
+      <OptimizationDashboardContent />
+    </Suspense>
   )
 }

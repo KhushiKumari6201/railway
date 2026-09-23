@@ -30,7 +30,10 @@ router.post('/simulate', async (req, res) => {
       })
     }
 
-    const { corridorId, sectionId, date, incidentStart, incidentEnd, estimatedDuration, taskIds } = scenario
+    const { corridorId, sectionId, date, estimatedDuration, taskIds } = scenario
+    const incidentStart = scenario.incidentStart || scenario.start
+    const incidentEnd = scenario.incidentEnd || scenario.end
+
     if (!corridorId) {
       return res.status(400).json({
         success: false,
@@ -42,7 +45,7 @@ router.post('/simulate', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'ValidationError',
-        message: 'incidentStart and incidentEnd times are required.',
+        message: 'incidentStart and incidentEnd (or start/end) times are required.',
       })
     }
 

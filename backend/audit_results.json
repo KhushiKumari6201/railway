@@ -1,0 +1,235 @@
+{
+  "timestamp": "2026-09-23T12:02:43.590Z",
+  "passed": 38,
+  "failed": 0,
+  "report": [
+    {
+      "name": "GET /api/health",
+      "success": true,
+      "status": 200,
+      "details": "DB: connected"
+    },
+    {
+      "name": "POST /api/auth/login",
+      "success": true,
+      "status": 200,
+      "details": "Role: ADMIN"
+    },
+    {
+      "name": "GET /api/auth/me",
+      "success": true,
+      "status": 200,
+      "details": "User: Ashok Kumar (Admin)"
+    },
+    {
+      "name": "GET /api/users",
+      "success": true,
+      "status": 200,
+      "details": "Count: 22"
+    },
+    {
+      "name": "GET /api/audit",
+      "success": true,
+      "status": 200,
+      "details": "Count: 1315"
+    },
+    {
+      "name": "GET /api/analytics/overview",
+      "success": true,
+      "status": 200,
+      "details": "Success: true"
+    },
+    {
+      "name": "GET /api/tasks",
+      "success": true,
+      "status": 200,
+      "details": "Total tasks: 126"
+    },
+    {
+      "name": "GET /api/tasks/ENG-221",
+      "success": true,
+      "status": 200,
+      "details": "Task: ENG-221"
+    },
+    {
+      "name": "GET /api/blocks",
+      "success": true,
+      "status": 200,
+      "details": "Total blocks: 563"
+    },
+    {
+      "name": "GET /api/conflicts",
+      "success": true,
+      "status": 200,
+      "details": "Total conflicts: 5076"
+    },
+    {
+      "name": "GET /api/network/intelligence",
+      "success": true,
+      "status": 200,
+      "details": "Corridors: 5"
+    },
+    {
+      "name": "GET /api/network/topology",
+      "success": true,
+      "status": 200,
+      "details": "Topology nodes: 5"
+    },
+    {
+      "name": "POST /api/what-if/simulate",
+      "success": true,
+      "status": 200,
+      "details": "Impact score: undefined"
+    },
+    {
+      "name": "POST /api/what-if/compare",
+      "success": true,
+      "status": 200,
+      "details": "Scenarios: undefined"
+    },
+    {
+      "name": "POST /api/network/coordination/check",
+      "success": true,
+      "status": 200,
+      "details": "Cross impact: undefined"
+    },
+    {
+      "name": "GET /api/disruptions",
+      "success": true,
+      "status": 200,
+      "details": "Incidents count: 4"
+    },
+    {
+      "name": "GET /api/disruptions/INC-001/report",
+      "success": true,
+      "status": 200,
+      "details": "Report: undefined"
+    },
+    {
+      "name": "POST /api/rescheduling/simulate",
+      "success": true,
+      "status": 200,
+      "details": "Candidates: 4"
+    },
+    {
+      "name": "POST /api/optimization/generate",
+      "success": true,
+      "status": 200,
+      "details": "Candidates: undefined"
+    },
+    {
+      "name": "GET /api/command-center/overview",
+      "success": true,
+      "status": 200,
+      "details": "TraceId: undefined"
+    },
+    {
+      "name": "GET /api/alerts",
+      "success": true,
+      "status": 200,
+      "details": "Total alerts: 105"
+    },
+    {
+      "name": "GET /api/alerts/summary",
+      "success": true,
+      "status": 200,
+      "details": "Active: undefined"
+    },
+    {
+      "name": "POST /api/alerts/evaluate",
+      "success": true,
+      "status": 200,
+      "details": "Evaluated: undefined"
+    },
+    {
+      "name": "Frontend page /",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /login",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /network-intelligence",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /planner",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /conflicts",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /what-if",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /network-coordination",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /disruptions",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /optimization",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /command-center",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /alerts",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /reports",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /settings",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /monthly",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    },
+    {
+      "name": "Frontend page /queue",
+      "success": true,
+      "status": 200,
+      "details": "OK"
+    }
+  ]
+}

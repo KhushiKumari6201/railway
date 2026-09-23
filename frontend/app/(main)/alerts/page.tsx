@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -39,7 +39,7 @@ import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 
-export default function AlertCenterPage() {
+function AlertCenterContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const queryAlertId = searchParams.get('alertId')
@@ -886,5 +886,22 @@ export default function AlertCenterPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AlertCenterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-96 items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <RefreshCw className="h-8 w-8 animate-spin text-indigo-500" />
+            <span className="text-xs text-muted-foreground">Loading Alert Intelligence Center...</span>
+          </div>
+        </div>
+      }
+    >
+      <AlertCenterContent />
+    </Suspense>
   )
 }
